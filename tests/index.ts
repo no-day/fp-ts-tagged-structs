@@ -1,12 +1,51 @@
-import * as myLib from '../src'
-import * as fc from 'fast-check'
+import * as $ from '../src'
+import { pipe } from 'fp-ts/lib/function'
 
-describe('greet', () => {
-  it('greets anything', () => {
-    fc.assert(
-      fc.property(fc.string(), (name) => {
-        expect(myLib.greet(name)).toBe(`Hello, ${name}!`)
+describe('index', () => {
+  describe('tagWithConfig_', () => {
+    it('works', () => {
+      expect(
+        $.tagWithConfig_('foo', { bar: 1, baz: true }, { tag: 'tag' as const })
+      ).toStrictEqual({
+        tag: 'foo',
+        bar: 1,
+        baz: true,
       })
-    )
+    })
+  })
+
+  describe('tag_', () => {
+    it('works', () => {
+      expect($.tag_('foo', { bar: 1, baz: true })).toStrictEqual({
+        _tag: 'foo',
+        bar: 1,
+        baz: true,
+      })
+    })
+  })
+
+  describe('tagWithConfig', () => {
+    it('works', () => {
+      expect(
+        pipe(
+          { bar: 1, baz: true },
+          $.tagWithConfig({ tag: 'tag' as const })('foo')
+        )
+      ).toStrictEqual({
+        tag: 'foo',
+        bar: 1,
+        baz: true,
+      })
+    })
+  })
+
+  describe('tag', () => {
+    it('works', () => {
+      expect(pipe({ bar: 1, baz: true }, $.tag('foo'))).toStrictEqual({
+        _tag: 'foo',
+        bar: 1,
+        baz: true,
+      })
+    })
   })
 })
