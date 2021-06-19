@@ -1,5 +1,3 @@
-/** @since 1.0.0 */
-
 import { pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/Record'
 
@@ -13,63 +11,68 @@ type Ctor<
   Cfg extends IsConfig = IsConfig
 > = (data: D) => Tag<T, D, Cfg>
 
+type UnionCtor<
+  D extends IsData = IsData,
+  S extends IsSpec = IsSpec,
+  Cfg extends IsConfig = IsConfig
+> = (data: D) => TaggedUnion<S, Cfg>
+
 type MapCtors<S extends IsSpec, Cfg extends IsConfig> = {
   [key in keyof S]: Ctor<key & string, S[key], Cfg>
 }
+
+type MapUnionCtors<S extends IsSpec, Cfg extends IsConfig> = {
+  [key in keyof S]: UnionCtor<S[key], S, Cfg>
+}
+
+type MapTag<S extends IsSpec, Cfg extends IsConfig> = {
+  [key in keyof S]: Tag<key & string, S[key], Cfg>
+}
+
+type MapBranches<S extends IsSpec, Z> = {
+  [key in keyof S]: Branch<S[key], Z>
+}
+
+type PartialMapBranches<S extends IsSpec, Z> = Partial<MapBranches<S, Z>>
+
+type Branch<D, Z> = (data: D) => Z
+
+type Union<R> = R[keyof R]
+
+type TaggedUnion<R extends IsSpec, Cfg extends IsConfig> = Union<MapTag<R, Cfg>>
 
 // -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
 
-/**
- * @since 1.0.0
- * @category Types
- */
+/** @category Types */
 export type IsData = Record<string, unknown>
 
-/**
- * @since 1.0.0
- * @category Types
- */
+/** @category Types */
 export type IsTag = string
 
-/**
- * @since 1.0.0
- * @category Types
- */
+/** @category Types */
 export type IsConfig = {
   tag: IsTag
 }
 
-/**
- * @since 1.0.0
- * @category Types
- */
+/** @category Types */
 export type IsSpec = Record<IsTag, IsData>
 
-/**
- * @since 1.0.0
- * @category Types
- */
+/** @category Types */
 export type Tag<T extends IsTag, D extends IsData, Cfg extends IsConfig> = {
   [key in Cfg['tag']]: T
 } &
   D
 
-/**
- * @since 1.0.0
- * @category Types
- */
+/** @category Types */
 export type UnTag<D extends IsData, Cfg extends IsConfig> = Omit<D, Cfg['tag']>
 
 // -----------------------------------------------------------------------------
 // Pipeables
 // -----------------------------------------------------------------------------
 
-/**
- * @since 1.0.0
- * @category Pipeables
- */
+/** @category Pipeables */
 export const tag: <Cfg extends IsConfig>(
   cfg: Cfg
 ) => <T extends IsTag>(
@@ -84,25 +87,37 @@ export const tag: <Cfg extends IsConfig>(
 // Utils
 // -----------------------------------------------------------------------------
 
-/**
- * @since 1.0.0
- * @category Utils
- */
+/** @category Utils */
 export const ofType = <A>(): A => ({} as A)
 
-/**
- * @since 1.0.0
- * @category Utils
- */
+/** @category Utils */
 export const mkCtors =
   <Cfg extends IsConfig>(cfg: Cfg) =>
-  <W extends IsSpec>(witness: W): MapCtors<W, Cfg> =>
-    pipe(witness as IsSpec, R.mapWithIndex(tag(cfg))) as MapCtors<W, Cfg>
+  <S extends IsSpec>(witness: S): MapCtors<S, Cfg> =>
+    pipe(witness as IsSpec, R.mapWithIndex(tag(cfg))) as MapCtors<S, Cfg>
 
-// export const mkUnionCtors: <Cfg extends IsConfig>(
-//   cfg: Cfg
-// ) => <W extends IsSpec>(witness: W) => MapCtors<W, Cfg> = 1 as any
+/** @category Utils */
+export const mkUnionCtors: <Cfg extends IsConfig>(
+  cfg: Cfg
+) => <S extends IsSpec>(witness: S) => MapUnionCtors<S, Cfg> = mkCtors
 
-// export const match: <Cfg extends IsConfig>(
-//   cfg: Cfg
-// ) => <W extends IsSpec>(witness: W) => MapCtors<W> = 1 as any
+/** @category Utils */
+export const match =
+  <Cfg extends IsConfig>(cfg: Cfg) =>
+  <S extends IsSpec, Z>(branches: MapBranches<S, Z>) =>
+  (x: TaggedUnion<S, Cfg>): Z =>
+    branches[x[cfg.tag] as keyof typeof branches](x)
+
+/** @category Utils */
+export const matchSome =
+  <Cfg extends IsConfig>(cfg: Cfg) =>
+  <S extends IsSpec, Z>(
+    branches: PartialMapBranches<S, Z>,
+    otherwise: () => Z
+  ) =>
+  (x: TaggedUnion<S, Cfg>): Z => {
+    const tag_ = x[cfg.tag] as keyof MapBranches<S, Z>
+    const branch = branches[tag_]
+
+    return branch ? branch(x) : otherwise()
+  }
