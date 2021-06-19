@@ -1,118 +1,107 @@
 ---
 title: index.ts
-nav_order: 1
+nav_order: 2
 parent: Modules
 ---
 
 ## index overview
 
-Added in v1.0.0
-
 ---
 
 <h2 class="text-delta">Table of contents</h2>
 
-- [Non Pipeables](#non-pipeables)
-  - [tagWithConfig\_](#tagwithconfig_)
-  - [tag\_](#tag_)
-- [Pipeables](#pipeables)
+- [Constructors](#constructors)
+  - [mkCtors](#mkctors)
+  - [mkUnionCtors](#mkunionctors)
   - [tag](#tag)
-  - [tagWithConfig](#tagwithconfig)
+- [Destructors](#destructors)
+  - [match](#match)
+  - [matchSome](#matchsome)
 - [Types](#types)
-  - [IsConfig (type alias)](#isconfig-type-alias)
   - [Tag (type alias)](#tag-type-alias)
   - [UnTag (type alias)](#untag-type-alias)
+- [Utils](#utils)
+  - [ofType](#oftype)
 
 ---
 
-# Non Pipeables
+# Constructors
 
-## tagWithConfig\_
-
-**Signature**
-
-```ts
-export declare const tagWithConfig_: <T extends string, D extends Record<string, unknown>, Cfg extends IsConfig>(
-  tag: T,
-  data: D,
-  config: Cfg
-) => Tag<T, D, Cfg>
-```
-
-Added in v1.0.0
-
-## tag\_
+## mkCtors
 
 **Signature**
 
 ```ts
-export declare const tag_: <T extends string, D extends Record<string, unknown>>(
-  tag: T,
-  data: D
-) => Tag<T, D, DefaultConfig>
+export declare const mkCtors: <S>(
+  witness: S
+) => { [key in keyof S]: (data: S[key]) => C.Tag<key & string, S[key], { tag: '_tag' }> }
 ```
 
-Added in v1.0.0
+## mkUnionCtors
 
-# Pipeables
+**Signature**
+
+```ts
+export declare const mkUnionCtors: <S>(
+  witness: S
+) => { [key in keyof S]: (data: S[key]) => { [key in keyof S]: C.Tag<key & string, S[key], { tag: '_tag' }> }[keyof S] }
+```
 
 ## tag
 
 **Signature**
 
 ```ts
-export declare const tag: <T extends string>(
-  tag: T
-) => <D extends Record<string, unknown>>(data: D) => Tag<T, D, DefaultConfig>
+export declare const tag: <T>(tag: T) => <D>(data: D) => C.Tag<T, D, { tag: '_tag' }>
 ```
 
-Added in v1.0.0
+# Destructors
 
-## tagWithConfig
+## match
 
 **Signature**
 
 ```ts
-export declare const tagWithConfig: <Cfg extends IsConfig>(
-  cfg: Cfg
-) => <T extends string>(tag: T) => <D extends Record<string, unknown>>(data: D) => Tag<T, D, Cfg>
+export declare const match: <S, Z>(
+  branches: { [key in keyof S]: (data: S[key]) => Z }
+) => (x: { [key in keyof S]: C.Tag<key & string, S[key], { tag: '_tag' }> }[keyof S]) => Z
 ```
 
-Added in v1.0.0
+## matchSome
+
+**Signature**
+
+```ts
+export declare const matchSome: <S, Z>(
+  branches: Partial<{ [key in keyof S]: (data: S[key]) => Z }>,
+  otherwise: () => Z
+) => (x: { [key in keyof S]: C.Tag<key & string, S[key], { tag: '_tag' }> }[keyof S]) => Z
+```
 
 # Types
-
-## IsConfig (type alias)
-
-**Signature**
-
-```ts
-export type IsConfig = {
-  tag: string
-}
-```
-
-Added in v1.0.0
 
 ## Tag (type alias)
 
 **Signature**
 
 ```ts
-export type Tag<T extends IsTag, D extends IsData, Cfg extends IsConfig = DefaultConfig> = {
-  [key in Cfg['tag']]: T
-} &
-  D
+export type Tag<T extends C.IsTag, D extends C.IsData> = C.Tag<T, D, DefaultConfig>
 ```
-
-Added in v1.0.0
 
 ## UnTag (type alias)
 
 **Signature**
 
 ```ts
-export type UnTag<D extends IsData, Cfg extends IsConfig = DefaultConfig> = Omit<D, Cfg['tag']>
+export type UnTag<D extends C.IsData> = C.UnTag<D, DefaultConfig>
 ```
 
-Added in v1.0.0
+# Utils
+
+## ofType
+
+**Signature**
+
+```ts
+export declare const ofType: <A>() => A
+```
